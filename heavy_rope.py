@@ -70,6 +70,8 @@ class HeavyRopeOnSlope(MovingCameraScene):
         rope.shift(UP)
         ropeCopy.shift(UP*0.1)
 
+        print((left + up)/2, ropeCopy.get_center())
+
         self.play(Transform(rope, ropeCopy))
         self.wait()
 
@@ -96,7 +98,6 @@ class HeavyRopeOnSlope(MovingCameraScene):
 
         self.wait()
 
-
         self.play(FadeOut(ann))
         ann = self.getAnnotation("Силы, действующие на канат")
         self.play(FadeIn(ann))
@@ -104,14 +105,15 @@ class HeavyRopeOnSlope(MovingCameraScene):
 
         forces = VGroup()
 
-        start = (up + left) / 2 + UP*0.2
-        end = start + 2*DOWN
-        forces.add(Arrow(start, end, color=BLUE))
+        start = ropeCopy.get_center()
+        end = start + 1.5*DOWN
+
+        forces.add(Arrow(start, end, buff=0, color=BLUE))
         forces.add(Text("mg").scale(0.5).shift((start + end) / 2 + 0.5*RIGHT))
 
-        start = up
-        end = start + (up - left) * 0.2
-        forces.add(Arrow(start, end, color=BLUE))
+        start = ropeCopy.get_end()
+        end = start + (up - left) * 0.15
+        forces.add(Arrow(start, end, buff=0, color=BLUE))
         forces.add(Text("T").scale(0.5).shift((start + end) / 2 + 0.5*UP))
         self.play(FadeIn(forces))
         self.wait()
