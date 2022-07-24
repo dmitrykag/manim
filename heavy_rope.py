@@ -44,6 +44,13 @@ class HeavyRopeOnSlope(MovingCameraScene):
         res.shift(3 * UP)
         return res
 
+    def force(self, start, end: float, text: str, pos: np.ndarray) -> Mobject:
+        res = VGroup()
+        f = Arrow(start, end, buff=0, color=BLUE)
+        res.add(f)
+        res.add(Text(text, font="sans-serif").scale(0.5).next_to(f, pos))
+        return res
+
 
     def construct(self):
         left = LEFT * 5 + 3 * DOWN
@@ -69,8 +76,6 @@ class HeavyRopeOnSlope(MovingCameraScene):
         ropeCopy = rope.copy()
         rope.shift(UP)
         ropeCopy.shift(UP*0.1)
-
-        print((left + up)/2, ropeCopy.get_center())
 
         self.play(Transform(rope, ropeCopy))
         self.wait()
@@ -107,18 +112,25 @@ class HeavyRopeOnSlope(MovingCameraScene):
 
         start = ropeCopy.get_center()
         end = start + 1.5*DOWN
-
-        forces.add(Arrow(start, end, buff=0, color=BLUE))
-        forces.add(Text("mg").scale(0.5).shift((start + end) / 2 + 0.5*RIGHT))
+        forces.add(self.force(start, end, "mg", RIGHT))
 
         start = ropeCopy.get_end()
         end = start + (up - left) * 0.15
-        forces.add(Arrow(start, end, buff=0, color=BLUE))
-        forces.add(Text("T").scale(0.5).shift((start + end) / 2 + 0.5*UP))
+        forces.add(self.force(start, end, "T", UP))
+
+        start = ropeCopy.get_center()
+        vec = slope.get_vector()
+        perp = np.empty_like(vec)
+        perp[0] = -vec[1]
+        perp[1] = vec[0]
+        end = start + normalize(perp)*1.4
+        forces.add(self.force(start, end, "N", RIGHT))
+
         self.play(FadeIn(forces))
         self.wait()
 
-        self.play(FadeOut(inclinedPlane))
+        self.play(*[FadeOut(mob)for mob in self.mobjects], run_time=5)
+
 
 
 
