@@ -44,6 +44,13 @@ class HeavyRopeOnSlope(MovingCameraScene):
         res.shift(3 * UP)
         return res
 
+    def getMathTexAnnotation(self, text: str) -> Text:
+        res = SingleStringMathTex(text, tex_template=patch_tex_template())
+        res.scale(0.5)
+        res.shift(3 * UP)
+        return res
+
+
     def force(self, start, end: float, text: str, pos: np.ndarray) -> Mobject:
         res = VGroup()
         f = Arrow(start, end, buff=0, color=BLUE)
@@ -128,6 +135,23 @@ class HeavyRopeOnSlope(MovingCameraScene):
 
         self.play(FadeIn(forces))
         self.wait()
+
+        self.play(FadeOut(ann))
+        ann = self.getAnnotation("Сила натяжения каната")
+        tex = self.getMathTexAnnotation("T = mg\\sin{\\alpha}").next_to(ann, DOWN)
+        self.play(FadeIn(ann, tex))
+        self.wait()
+
+        tex1 = self.getMathTexAnnotation("m = l\\rho = \\frac{H\\rho}{\\sin{\\alpha}}").next_to(tex, DOWN)
+        self.play(FadeIn(tex1))
+        self.wait()
+
+        self.play(FadeOut(tex, tex1))
+        tex = self.getMathTexAnnotation("T = \\rho g H").next_to(ann, DOWN)
+        self.play(FadeIn(tex))
+
+        self.wait()
+
 
         self.play(*[FadeOut(mob)for mob in self.mobjects], run_time=5)
 
