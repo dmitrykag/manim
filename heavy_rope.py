@@ -50,16 +50,27 @@ class HeavyRopeOnSlope(MovingCameraScene):
         res.shift(3 * UP)
         return res
 
+    def force(self, start: float, end: float, text: str = "", pos: np.ndarray = ORIGIN, *vmobjects, **kwargs) -> VGroup:
+        class Force(VGroup):
+            def __init__(self, start: float, end: float, text: str, pos: np.ndarray):
+                super().__init__(*vmobjects, **kwargs)
+                self.arrow = Arrow(start, end, buff=0, color=BLUE)
+                super().add(self.arrow)
+                super().add(Text(text, font="sans-serif").scale(0.5).next_to(self.arrow, pos))
 
-    def force(self, start, end: float, text: str, pos: np.ndarray) -> Mobject:
-        res = VGroup()
-        f = Arrow(start, end, buff=0, color=BLUE)
-        res.add(f)
-        res.add(Text(text, font="sans-serif").scale(0.5).next_to(f, pos))
-        return res
-
+        return Force(start, end, text, pos)
 
     def construct(self):
+        def norm_perpendicular(vec: np.ndarray) -> np.ndarray:
+            perp = np.empty_like(vec)
+            perp[0] = -vec[1]
+            perp[1] = vec[0]
+            return perp
+
+        def projection(vec: np.ndarray, to_proj: np.ndarray) -> np.ndarray:
+            return (np.dot(vec, to_proj)/np.dot(to_proj, to_proj))*to_proj
+
+
         left = LEFT * 5 + 3 * DOWN
         right = RIGHT * 5 + 3 * DOWN
         up = RIGHT * 5 + UP * 4 + 3 * DOWN
@@ -119,19 +130,19 @@ class HeavyRopeOnSlope(MovingCameraScene):
 
         start = ropeCopy.get_center()
         end = start + 1.5*DOWN
-        forces.add(self.force(start, end, "mg", RIGHT))
+        mg = self.force(start, end, "mg", RIGHT)
+        forces.add(mg)
 
         start = ropeCopy.get_end()
         end = start + (up - left) * 0.15
         forces.add(self.force(start, end, "T", UP))
 
         start = ropeCopy.get_center()
-        vec = slope.get_vector()
-        perp = np.empty_like(vec)
-        perp[0] = -vec[1]
-        perp[1] = vec[0]
-        end = start + normalize(perp)*1.4
+        end = start + norm_perpendicular(slope.get_vector())*1.4
         forces.add(self.force(start, end, "N", RIGHT))
+
+        mg_proj = projection(mg.arrow.get_vector(), coord.get_vector())
+        forces.add(self.force(mg_proj[0], mg_proj[1]))
 
         self.play(FadeIn(forces))
         self.wait()
