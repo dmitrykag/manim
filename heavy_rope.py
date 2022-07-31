@@ -1,5 +1,8 @@
 from manim import *
 import math
+from typing import Tuple
+
+from numpy import float64
 
 def patch_tex_template():
     myTemplate = TexTemplate()
@@ -36,6 +39,88 @@ class Matrix(Scene):
         # self.play(ClockwiseTransform(matrix[1], matrix[1]))
         self.play(Rotating(matrix[1], radians=PI/6), run_time=1)
 
+class Test(Scene):
+
+    def cos(self, vec: np.ndarray) -> float64:
+        return vec[0] / math.sqrt(np.dot(vec, vec))
+
+    def sin(self, vec: np.ndarray) -> float64:
+        return vec[1] / math.sqrt(np.dot(vec, vec))
+
+    def construct(self):
+        def norm_perpendicular(vec: np.ndarray) -> np.ndarray:
+            perp = np.empty_like(vec)
+            perp[0] = -vec[1]
+            perp[1] = vec[0]
+            perp /= np.linalg.norm(perp)
+            return perp
+
+        def perp_to_line(point_from: np.ndarray, line_start: np.ndarray, line_end: np.ndarray) -> np.ndarray:
+            direction = norm_perpendicular(line_end - line_start)
+            distance = np.linalg.norm(np.cross(line_end - line_start, point_from - line_start))
+            distance /= np.linalg.norm(line_end - line_start)
+            return point_from - direction * distance
+
+        def projection(vec: Line, to_proj: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+            prj = to_proj * vec.get_vector().dot(to_proj)
+            prj /= to_proj.dot(to_proj)
+            return vec.get_start(), prj + vec.get_start()
+
+        left = LEFT * 5 + 3 * DOWN
+        right = RIGHT * 5 + 3 * DOWN
+        up = RIGHT * 5 + UP * 4 + 3 * DOWN
+
+        cos = (right-left)[0] / math.sqrt(np.dot(up-left, up-left))
+        sin = (up-right)[1] / math.sqrt(np.dot(up-left, up-left))
+        tg = sin/cos
+        print('sin, cos, tg', sin, cos, tg, sin*sin + cos*cos)
+
+        horiz = Line(left, right)
+        vert = Line(right, up)
+        slope = Line(left, up)
+
+        rope = Line(left, up, stroke_width=12, color=MAROON)
+        rope.scale(0.5)
+        rope.shift(UP*0.1)
+
+        self.add(rope)
+
+        coord = Arrow(up, left, buff=0, color=BLUE)
+        print('coord', coord.get_vector())
+        coord.shift((left - up) * 0.2)
+        print('coord', coord.get_vector())
+        # coord.set_z_index(-1)
+
+        self.add(coord)
+
+        start = rope.get_center()
+        end = start + 2*DOWN
+        mg = Arrow(start, end, buff=0, color=BLUE)
+
+        self.add(mg)
+
+        # mg_proj = projection(mg, coord.get_vector())
+        start, end = projection(mg, coord.get_vector())
+        # mg_proj = mg.copy()
+        mg_proj = Arrow(start, end, buff=0, color=BLUE)
+        # mg_proj.shift(RIGHT)
+        # mg_proj.set_points_by_ends(mg.get_start(), mg.get_end() + RIGHT)
+        self.add(mg_proj)
+
+        # perp = norm_perpendicular(coord.get_vector())
+        # perp *= np.linalg.norm(np.cross(rope.get_end() - rope.get_start(), mg.get_end() - rope.get_end()))
+        # perp /= np.linalg.norm(rope.get_end() - rope.get_start())
+
+        perp = perp_to_line(mg.get_end(), coord.get_start(), coord.get_end())
+        dashed = DashedLine(mg.get_end(), perp, color=BLUE)
+
+        # dashed = DashedLine(mg.get_end(), mg.get_end() - perp, color=BLUE)
+        # mg_proj.shift(RIGHT)
+        # mg_proj.set_points_by_ends(mg.get_start(), mg.get_end() + RIGHT)
+        self.add(dashed)
+
+
+
 
 class HeavyRopeOnSlope(MovingCameraScene):
     def getAnnotation(self, text: str) -> Text:
@@ -57,6 +142,7 @@ class HeavyRopeOnSlope(MovingCameraScene):
                 self.arrow = Arrow(start, end, buff=0, color=BLUE)
                 super().add(self.arrow)
                 super().add(Text(text, font="sans-serif").scale(0.5).next_to(self.arrow, pos))
+                print('force: ', start, end, text)
 
         return Force(start, end, text, pos)
 
@@ -65,15 +151,29 @@ class HeavyRopeOnSlope(MovingCameraScene):
             perp = np.empty_like(vec)
             perp[0] = -vec[1]
             perp[1] = vec[0]
+            perp /= np.linalg.norm(perp)
             return perp
 
-        def projection(vec: np.ndarray, to_proj: np.ndarray) -> np.ndarray:
-            return (np.dot(vec, to_proj)/np.dot(to_proj, to_proj))*to_proj
+        def perp_to_line(point_from: np.ndarray, line_start: np.ndarray, line_end: np.ndarray) -> np.ndarray:
+            direction = norm_perpendicular(line_end - line_start)
+            distance = np.linalg.norm(np.cross(line_end - line_start, point_from - line_start))
+            distance /= np.linalg.norm(line_end - line_start)
+            return point_from - direction * distance
+
+        def projection(vec: Line, to_proj: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+            prj = to_proj * vec.get_vector().dot(to_proj)
+            prj /= to_proj.dot(to_proj)
+            return vec.get_start(), prj + vec.get_start()
 
 
         left = LEFT * 5 + 3 * DOWN
         right = RIGHT * 5 + 3 * DOWN
         up = RIGHT * 5 + UP * 4 + 3 * DOWN
+
+        cos = (right-left)[0] / math.sqrt(np.dot(up-left, up-left))
+        sin = (up-right)[1] / math.sqrt(np.dot(up-left, up-left))
+        tg = sin/cos
+        print('sin, cos, tg', sin, cos, tg, sin*sin + cos*cos)
 
         horiz = Line(left, right)
         vert = Line(right, up)
@@ -114,8 +214,10 @@ class HeavyRopeOnSlope(MovingCameraScene):
         self.play(FadeIn(ann))
         self.wait()
 
-        coord = Arrow(up, left, color=BLUE)
+        coord = Arrow(up, left, buff=0, color=BLUE)
+        print('coord', coord.get_vector())
         coord.shift((left - up) * 0.2)
+        print('coord', coord.get_vector())
         coord.set_z_index(-1)
         self.add(coord)
 
@@ -129,22 +231,31 @@ class HeavyRopeOnSlope(MovingCameraScene):
         forces = VGroup()
 
         start = ropeCopy.get_center()
-        end = start + 1.5*DOWN
+        end = start + 2*DOWN
         mg = self.force(start, end, "mg", RIGHT)
         forces.add(mg)
 
         start = ropeCopy.get_end()
-        end = start + (up - left) * 0.15
+        end = start + (up - left) * 0.1
         forces.add(self.force(start, end, "T", UP))
 
         start = ropeCopy.get_center()
-        end = start + norm_perpendicular(slope.get_vector())*1.4
+        end = start + norm_perpendicular(slope.get_vector())*1.2
         forces.add(self.force(start, end, "N", RIGHT))
 
-        mg_proj = projection(mg.arrow.get_vector(), coord.get_vector())
-        forces.add(self.force(mg_proj[0], mg_proj[1]))
-
         self.play(FadeIn(forces))
+        self.wait()
+
+        projections = VGroup()
+
+        mg_proj = projection(mg.arrow, coord.get_vector())
+        projections.add(self.force(mg_proj[0], mg_proj[1]))
+
+        perp = perp_to_line(mg.arrow.get_end(), coord.get_start(), coord.get_end())
+        dashed = DashedLine(mg.arrow.get_end(), perp, color=BLUE)
+        projections.add(dashed)
+
+        self.play(FadeIn(projections))
         self.wait()
 
         self.play(FadeOut(ann))
